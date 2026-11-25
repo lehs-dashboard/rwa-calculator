@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maintenance Calculator</title>
+<style>
+:root{--navy:#14243a;--blue:#315d91;--muted:#6b7788;--line:#e5eaf0;--bg:#f4f7fb;--white:#fff;--green:#13795b}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#eef3f9,#f8fafc);font-family:Inter,Arial,sans-serif;color:var(--navy);padding:28px 16px}
+.wrap{max-width:760px;margin:0 auto}.brand{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--blue);font-weight:800}
+h1{font-size:clamp(25px,5vw,36px);margin:10px 0 8px}.sub{color:var(--muted);margin:0 0 24px;line-height:1.5}
+.card{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 12px 35px #1c355414}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:8px;color:#44536a}
+input,select{width:100%;border:1px solid #d8e0e9;border-radius:10px;padding:13px 12px;font-size:16px;background:#fff;color:var(--navy);outline:none}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #315d9118}
+.note{font-size:12px;color:var(--muted);margin-top:7px}
+.results{margin-top:24px;border-top:1px solid var(--line);padding-top:20px}
+.results h2{font-size:17px;margin:0 0 14px}
+.line{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #eef1f5;font-size:14px}
+.line span:first-child{color:#59677a}.line strong{font-variant-numeric:tabular-nums}
+.total{margin-top:16px;background:#f0f5fb;border-radius:14px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.total span{font-weight:700}.total strong{font-size:clamp(25px,5vw,32px);color:var(--green);font-variant-numeric:tabular-nums}
+.pill{display:inline-block;background:#eaf2fb;color:var(--blue);font-size:11px;font-weight:800;padding:6px 9px;border-radius:99px;margin-bottom:10px}
+.footer{font-size:12px;color:var(--muted);line-height:1.6;margin:18px 4px}
+button{margin-top:16px;border:0;background:var(--navy);color:white;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer}
+@media(max-width:560px){body{padding:18px 12px}.card{padding:18px}.grid{grid-template-columns:1fr;gap:14px}.total{align-items:flex-start;flex-direction:column}}
+@media print{body{background:white;padding:0}.card{box-shadow:none}button{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">Resident Services</div>
+  <h1>Maintenance Calculator</h1>
+  <p class="sub">Calculate your quarterly CAM, CAP, applicable GST and total maintenance payable.</p>
+  <main class="card">
+    <div class="grid">
+      <div class="field">
+        <label for="area">Flat area (sq. ft.)</label>
+        <input id="area" type="number" min="1" step="1" value="1300">
+      </div>
+      <div class="field">
+        <label for="member">RWA membership</label>
+        <select id="member"><option value="yes" selected>Yes – RWA Member</option><option value="no">No – Non-member</option></select>
+        <div class="note">Members pay GST on CAP only; non-members on CAM + CAP.</div>
+      </div>
+      <div class="field">
+        <label for="type">Property rate category</label>
+        <select id="type"><option value="old" selected>Old – ₹8.25 / sq. ft.</option><option value="new">New – ₹10.68 / sq. ft.</option></select>
+      </div>
+      <div class="field">
+        <label for="cap">CAP rate (₹ / sq. ft.)</label>
+        <input id="cap" type="number" min="0" step="0.01" value="1.68">
+        <div class="note">Default CAP rate: ₹1.68 per sq. ft. per quarter.</div>
+      </div>
+    </div>
+    <section class="results" aria-live="polite">
+      <span class="pill">QUARTERLY CALCULATION</span>
+      <h2>Amount breakdown</h2>
+      <div class="line"><span>CAM rate</span><strong id="camRate">₹8.25 / sq. ft.</strong></div>
+      <div class="line"><span>CAM amount</span><strong id="cam">₹10,725.00</strong></div>
+      <div class="line"><span>CAP amount</span><strong id="capAmount">₹2,184.00</strong></div>
+      <div class="line"><span>GST taxable amount</span><strong id="taxable">₹2,184.00</strong></div>
+      <div class="line"><span>GST @ 18%</span><strong id="gst">₹393.12</strong></div>
+      <div class="total"><span>Total payable</span><strong id="total">₹13,302.12</strong></div>
+      <button type="button" onclick="window.print()">Print / Save as PDF</button>
+    </section>
+  </main>
+  <p class="footer">Rates are applied per sq. ft. per quarter. GST is calculated at 18% on the taxable amount based on the membership selection. Please confirm the rates and tax treatment with the RWA before issuing demands.</p>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+function calculate(){
+ const area=Math.max(0,Number($('area').value)||0);
+ const member=$('member').value;
+ const type=$('type').value;
+ const camRate=type==='old'?8.25:10.68;
+ const capRate=Math.max(0,Number($('cap').value)||0);
+ const cam=area*camRate, cap=area*capRate;
+ const taxable=member==='yes'?cap:cam+cap;
+ const gst=taxable*.18, total=cam+cap+gst;
+ $('camRate').textContent=money(camRate)+' / sq. ft.';
+ $('cam').textContent=money(cam);$('capAmount').textContent=money(cap);
+ $('taxable').textContent=money(taxable);$('gst').textContent=money(gst);
+ $('total').textContent=money(total);
+}
+['area','member','type','cap'].forEach(id=>$(id).addEventListener('input',calculate));
+calculate();
+</script>
+</body>
+</html>
